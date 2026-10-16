@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trace AI — Trí tuệ nhân tạo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#00F0FF',
+                        primaryDark: '#00B8C4',
+                        secondary: '#7B2FFD',
+                        accent: '#FF3D71',
+                        dark: {
+                            900: '#050714',
+                            800: '#0F1120',
+                            700: '#191B30',
+                            600: '#232540',
+                            500: '#2D3050'
+                        },
+                        board: {
+                            dark: '#0A0C1A',
+                            card: 'rgba(15, 23, 42, 0.75)'
+                        }
+                    },
+                    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+                    boxShadow: {
+                        'neon': '0 0 15px rgba(0, 240, 255, 0.4), 0 0 30px rgba(123, 47, 253, 0.2)',
+                        'neon-strong': '0 0 25px rgba(0, 240, 255, 0.6), 0 0 50px rgba(123, 47, 253, 0.3)',
+                        'glow-card': '0 0 20px rgba(0, 240, 255, 0.15), inset 0 1px 0 rgba(255,255,255,0.05)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            color: #E5E7EB;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-color: #050714;
+            position: relative;
+        }
+
+        /* ===== NỀN CÔNG NGHỆ MÁY MÓC & MÃ NGUỒN ===== */
+        .bg-grid {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: 0;
+        }
+
+        .bg-code-lines {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: 
+                linear-gradient(180deg, transparent 60%, rgba(123, 47, 253, 0.05) 100%);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .floating-code {
+            position: fixed;
+            font-family: monospace;
+            color: rgba(0, 240, 255, 0.15);
+            font-size: 13px;
+            line-height: 1.6;
+            z-index: 1;
+            pointer-events: none;
+            white-space: pre;
+        }
+        .code-1 { top: 10%; left: 5%; animation: floatCode 25s linear infinite; }
+        .code-2 { top: 30%; right: 5%; animation: floatCode 30s linear infinite reverse; }
+        .code-3 { bottom: 15%; left: 10%; animation: floatCode 35s linear infinite; }
+
+        @keyframes floatCode {
+            0% { transform: translateY(100vh); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100%); opacity: 0; }
+        }
+
+        .glow-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: 0;
+            opacity: 0.4;
+        }
+        .orb-1 { width: 400px; height: 400px; background: #00F0FF; top: -100px; right: -100px; }
+        .orb-2 { width: 500px; height: 500px; background: #7B2FFD; bottom: -150px; left: -100px; }
+        .orb-3 { width: 300px; height: 300px; background: #FF3D71; top: 40%; right: 20%; }
+
+        .circuit-path {
+            position: fixed;
+            stroke: rgba(0, 240, 255, 0.2);
+            stroke-width: 1;
+            fill: none;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .scan-line {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00F0FF, transparent);
+            z-index: 2;
+            opacity: 0.3;
+            animation: scan 4s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes scan {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(100vh); }
+        }
+
+        .neon-border {
+            border: 1px solid rgba(0, 240, 255, 0.25);
+            box-shadow: 
+                0 0 10px rgba(0, 240, 255, 0.1),
+                inset 0 0 10px rgba(0, 240, 255, 0.05);
+        }
+        .neon-border-strong {
+            border: 1px solid rgba(0, 240, 255, 0.5);
+            box-shadow: 
+                0 0 20px rgba(0, 240, 255, 0.2),
+                inset 0 0 15px rgba(123, 47, 253, 0.1);
+        }
+
+        .gradient-text {
+            background: linear-gradient(90deg, #00F0FF, #7B2FFD);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .gradient-main {
+            background: linear-gradient(135deg, #00F0FF 0%, #7B2FFD 100%);
+        }
+
+        .chat-bubble-user {
+            border-radius: 20px 20px 6px 20px;
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.15), rgba(123, 47, 253, 0.15));
+            border: 1px solid rgba(0, 240, 255, 0.3);
+        }
+        .chat-bubble-ai {
+            border-radius: 20px 20px 20px 6px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(123, 47, 253, 0.25);
+        }
+
+        .typing-dot {
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        @keyframes typing {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .model-card {
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(30, 41, 59, 0.5);
+        }
+        .model-card:hover {
+            border-color: rgba(0, 240, 255, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 240, 255, 0.1);
+        }
+        .model-card.selected {
+            border-color: #00F0FF;
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.1), rgba(123, 47, 253, 0.1));
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #00F0FF, #7B2FFD); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #00B8C4, #6B21E0); }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .input-glow:focus {
+            box-shadow: 0 0 0 2px rgba(0, 240, 255, 0.4), 0 0 20px rgba(0, 240, 255, 0.15);
+        }
+        pre { background: rgba(0,0,0,0.6); border-left: 2px solid #00F0FF; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+        code { background: rgba(0, 240, 255, 0.1); color: #00F0FF; padding: 1px 5px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.9em; }
+        pre code { background: transparent; padding: 0; color: inherit; font-size: inherit; }
+
+        /* === Thẻ chọn chế độ === */
+        .mode-tab {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 18px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #9CA3AF;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(30, 41, 59, 0.45);
+            transition: all 0.25s ease;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+        .mode-tab:hover { color: #fff; border-color: rgba(0, 240, 255, 0.4); }
+        .mode-tab.active {
+            color: #fff;
+            border-color: #00F0FF;
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.18), rgba(123, 47, 253, 0.18));
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+        }
+        .mode-tab[data-mode="study"].active { border-color: #34D399; box-shadow: 0 0 15px rgba(52, 211, 153, 0.25); }
+        .mode-tab[data-mode="debug"].active { border-color: #FF3D71; box-shadow: 0 0 15px rgba(255, 61, 113, 0.25); }
+        .mode-tab[data-mode="mindmap"].active { border-color: #A78BFA; box-shadow: 0 0 15px rgba(167, 139, 250, 0.3); }
+        .mode-tab[data-mode="quiz"].active { border-color: #FBBF24; box-shadow: 0 0 15px rgba(251, 191, 36, 0.25); }
+        .mode-tab .tab-emoji { font-size: 16px; line-height: 1; }
+
+        /* === Sơ đồ tư duy === */
+        .mm-wrap { overflow-x: auto; padding: 16px 10px; margin: 10px 0; background: rgba(0,0,0,0.35); border: 1px solid rgba(0,240,255,0.2); border-radius: 12px; }
+        .mm-tree { display: inline-block; min-width: min-content; }
+        .mm-row { position: relative; display: flex; align-items: center; }
+        .mm-root { --c: #00F0FF; }
+        .mm-box { padding: 6px 12px; border-radius: 10px; border: 1.5px solid var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); color: #F3F4F6; font-size: 13px; line-height: 1.35; max-width: 220px; width: max-content; }
+        .mm-root > .mm-box { background: linear-gradient(135deg, rgba(0,240,255,0.3), rgba(123,47,253,0.35)); font-weight: 700; font-size: 15px; padding: 10px 16px; border-color: #00F0FF; box-shadow: 0 0 14px rgba(0,240,255,0.25); }
+        .mm-children { position: relative; display: flex; flex-direction: column; gap: 8px; margin-left: 36px; }
+        .mm-children::before { content: ''; position: absolute; left: -36px; width: 18px; top: 50%; height: 2px; margin-top: -1px; background: var(--c); }
+        .mm-children > .mm-row::before { content: ''; position: absolute; left: -18px; width: 18px; top: 50%; height: 2px; margin-top: -1px; background: var(--c); }
+        .mm-children > .mm-row::after { content: ''; position: absolute; left: -19px; width: 2px; top: -4px; bottom: -4px; background: var(--c); }
+        .mm-children > .mm-row:first-child::after { top: 50%; }
+        .mm-children > .mm-row:last-child::after { bottom: 50%; }
+        .mm-children > .mm-row:only-child::after { display: none; }
+        .mm-c0 { --c: #00F0FF; } .mm-c1 { --c: #A78BFA; } .mm-c2 { --c: #34D399; }
+        .mm-c3 { --c: #FBBF24; } .mm-c4 { --c: #FF3D71; } .mm-c5 { --c: #60A5FA; }
+
+        /* === Đáp án bài kiểm tra === */
+        .ans-btn { font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 10px; color: #6EE7B7; background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.4); cursor: pointer; transition: all .2s ease; }
+        .ans-btn:hover { background: rgba(52,211,153,0.2); }
+
+        /* === Lộ trình học tập === */
+        .mode-tab[data-mode="progress"].active { border-color: #34D399; box-shadow: 0 0 15px rgba(52, 211, 153, 0.3); }
+        .topic-pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 8px 6px 12px; border-radius: 999px; font-size: 13px; color: #D1FAE5; background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.35); }
+        .topic-pill small { color: #6EE7B7; font-size: 11px; background: rgba(52,211,153,0.15); padding: 1px 6px; border-radius: 999px; }
+        .del-btn { width: 20px; height: 20px; border-radius: 999px; font-size: 13px; line-height: 1; color: #9CA3AF; background: rgba(255,255,255,0.06); cursor: pointer; transition: all .2s ease; flex-shrink: 0; }
+        .del-btn:hover { color: #fff; background: rgba(255,61,113,0.6); }
+        .prog-item { padding: 10px 12px; border-radius: 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); }
+        .prog-bar { height: 6px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; }
+        .prog-bar > span { display: block; height: 100%; border-radius: 999px; }
+        .prog-link { font-size: 12px; padding: 4px 10px; border-radius: 8px; color: #C4B5FD; background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.35); cursor: pointer; }
+        .prog-link:hover { background: rgba(167,139,250,0.22); }
+
+        .chip {
+            font-size: 12.5px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(0, 240, 255, 0.25);
+            background: rgba(0, 240, 255, 0.06);
+            color: #A5F3FC;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        .chip:hover { background: rgba(0, 240, 255, 0.15); border-color: rgba(0, 240, 255, 0.6); }
+
+        .code-wrap { position: relative; }
+        .copy-btn {
+            position: absolute;
+            top: 6px; right: 6px;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.08);
+            color: #9CA3AF;
+            border: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+        }
+        .copy-btn:hover { color: #fff; background: rgba(0,240,255,0.2); }
+        .code-lang { font-size: 11px; color: #6B7280; padding: 6px 12px 0; text-transform: uppercase; letter-spacing: .05em; }
+
+        #user-input { resize: none; max-height: 160px; line-height: 1.5; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { scrollbar-width: none; }
+    </style>
+</head>
+<body class="font-sans min-h-screen flex flex-col">
+
+    <!-- NỀN CÔNG NGHỆ -->
+    <div class="bg-grid"></div>
+    <div class="bg-code-lines"></div>
+    <div class="scan-line"></div>
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+    <div class="glow-orb orb-3"></div>
+
+    <!-- Mã trôi nổi -->
+    <div class="floating-code code-1">
+function processData(input) {&#10;  const data = parse(input);&#10;  const result = await compute(data);&#10;  return result;&#10;}&#10;class TraceAI {&#10;  constructor() {&#10;    this.version = '3.0';&#10;    this.ready = true;&#10;  }&#10;  async think(prompt) {&#10;    return await this.model.generate(prompt);&#10;  }&#10;}
+    </div>
+    <div class="floating-code code-2">
+const api = connect(ENDPOINT);&#10;api.on('message', msg => {&#10;  console.log('>>', msg);&#10;});&#10;export default TraceAI;&#10;// Powered by intelligence&#10;// Neural network active...&#10;// Processing... OK
+    </div>
+    <div class="floating-code code-3">
+{&#10;  "model": "gemini-flash",&#10;  "temp": 0.7,&#10;  "tokens": 4096,&#10;  "stream": true,&#10;  "status": "online"&#10;}&#10;---[ SYSTEM READY ]---&#10;Connection established ✓
+    </div>
+
+    <!-- Header -->
+    <header class="glass-panel sticky top-0 z-40 border-b border-cyan-500/20">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl gradient-main flex items-center justify-center text-white shadow-neon">
+                    <i class="fa fa-microchip text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold gradient-text">Trace AI</h1>
+                    <p class="text-xs text-gray-400 hidden sm:block">Neural Network • Hoạt động</p>
+                </div>
+            </div>
+            <button id="settings-btn" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-cyan-500/30 hover:border-cyan-400/60 hover:shadow-neon transition-all text-sm font-medium text-gray-300">
+                <i class="fa fa-cog text-cyan-400"></i>
+                <span class="hidden sm:inline">Cấu Hình API</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Thanh trạng thái -->
+    <div id="status-bar" class="border-b border-yellow-500/20 py-2.5 px-4 text-center text-sm transition-all duration-300 bg-yellow-500/10">
+        <span id="status-text" class="text-yellow-300 font-medium">
+            <i class="fa fa-exclamation-triangle mr-1.5"></i> Chưa cấu hình — Nhấn "Cấu Hình API" để bắt đầu
+        </span>
+    </div>
+
+    <!-- Modal Cấu Hình -->
+    <div id="api-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="modal-overlay"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4 overflow-y-auto">
+            <div class="glass-panel rounded-3xl neon-border-strong w-full max-w-2xl my-4 overflow-hidden">
+                <div class="gradient-main text-white p-6">
+                    <h3 class="text-xl font-bold flex items-center gap-2">
+                        <i class="fa fa-key"></i> Kết Nối Hệ Thống AI
+                    </h3>
+                    <p class="text-cyan-100/80 text-sm mt-1">Chọn nhà cung cấp & nhập khóa API để kích hoạt Trace AI</p>
+                </div>
+                <div class="p-6">
+                    <div class="bg-cyan-500/10 border-l-4 border-cyan-400 p-4 rounded-r-xl mb-6">
+                        <p class="font-semibold text-cyan-300 text-sm flex items-center gap-1.5">
+                            <i class="fa fa-lightbulb-o"></i> Đề xuất
+                        </p>
+                        <p class="text-gray-300 text-sm mt-1">
+                            Chọn <strong class="text-cyan-300">Gemini Flash-Lite</strong> hoặc <strong class="text-purple-300">Groq Llama</strong> — hoàn toàn miễn phí!
+                        </p>
+                    </div>
+                    <p class="font-semibold text-gray-200 mb-3">📋 Chọn mô hình AI:</p>
+                    <div class="grid gap-3 mb-6">
+                        <label class="model-card rounded-xl p-4 cursor-pointer block">
+                            <input type="radio" name="model" value="gemini-flash-lite" class="hidden">
+                            <div class="flex items-start gap-3">
+                                <div class="w-5 h-5 mt-0.5 rounded-full border-2 border-gray-500 flex items-center justify-center flex-shrink-0 radio-indicator">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 scale-0 transition-transform"></span>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex flex-wrap justify-between items-start gap-2">
+                                        <span class="font-bold text-white">🔷 Google Gemini Flash-Lite</span>
+                                        <span class="bg-green-500/20 text-green-300 text-xs px-2 py-0.5 rounded-full font-medium">Khuyến nghị</span>
+                                    </div>
+                                    <p class="text-sm text-gray-400 mt-1">✅ Miễn phí vĩnh viễn • Nhanh • Hỗ trợ tiếng Việt tốt</p>
+                                    <p class="text-xs text-cyan-400 mt-1.5">
+                                        🔑 Lấy key: <a href="https://aistudio.google.com/apikey" target="_blank" class="underline hover:text-white">aistudio.google.com/apikey</a>
+                                    </p>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="model-card rounded-xl p-4 cursor-pointer block">
+                            <input type="radio" name="model" value="groq-llama" class="hidden">
+                            <div class="flex items-start gap-3">
+                                <div class="w-5 h-5 mt-0.5 rounded-full border-2 border-gray-500 flex items-center justify-center flex-shrink-0 radio-indicator">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 scale-0 transition-transform"></span>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex flex-wrap justify-between items-start gap-2">
+                                        <span class="font-bold text-white">⚡ Groq — Llama 3.3 70B</span>
+                                        <span class="bg-blue-500/20 text-blue-300 text-xs px-2 py-0.5 rounded-full font-medium">Nhanh nhất</span>
+                                    </div>
+                                    <p class="text-sm text-gray-400 mt-1">✅ Miễn phí • Phản hồi tức thì</p>
+                                    <p class="text-xs text-cyan-400 mt-1.5">
+                                        🔑 Lấy key: <a href="https://console.groq.com/keys" target="_blank" class="underline hover:text-white">console.groq.com/keys</a>
+                                    </p>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="model-card rounded-xl p-4 cursor-pointer block">
+                            <input type="radio" name="model" value="openrouter" class="hidden">
+                            <div class="flex items-start gap-3">
+                                <div class="w-5 h-5 mt-0.5 rounded-full border-2 border-gray-500 flex items-center justify-center flex-shrink-0 radio-indicator">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 scale-0 transition-transform"></span>
+                                </div>
+                                <div class="flex-1">
+                                    <span class="font-bold text-white">🌐 OpenRouter</span>
+                                    <p class="text-sm text-gray-400 mt-1">✅ 50 lượt/ngày miễn phí</p>
+                                    <p class="text-xs text-cyan-400 mt-1.5">
+                                        🔑 Lấy key: <a href="https://openrouter.ai/keys" target="_blank" class="underline hover:text-white">openrouter.ai/keys</a>
+                                    </p>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="model-card rounded-xl p-4 cursor-pointer block">
+                            <input type="radio" name="model" value="deepseek" class="hidden">
+                            <div class="flex items-start gap-3">
+                                <div class="w-5 h-5 mt-0.5 rounded-full border-2 border-gray-500 flex items-center justify-center flex-shrink-0 radio-indicator">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 scale-0 transition-transform"></span>
+                                </div>
+                                <div class="flex-1">
+                                    <span class="font-bold text-white">🧠 DeepSeek V4 Flash</span>
+                                    <p class="text-sm text-gray-400 mt-1">✅ ~60 lượt/ngày miễn phí</p>
+                                    <p class="text-xs text-cyan-400 mt-1.5">
+                                        🔑 Lấy key: <a href="https://platform.deepseek.com/api_keys" target="_blank" class="underline hover:text-white">platform.deepseek.com</a>
+                                    </p>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="model-card rounded-xl p-4 cursor-pointer block opacity-70">
+                            <input type="radio" name="model" value="openai" class="hidden">
+                            <div class="flex items-start gap-3">
+                                <div class="w-5 h-5 mt-0.5 rounded-full border-2 border-gray-500 flex items-center justify-center flex-shrink-0 radio-indicator">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 scale-0 transition-transform"></span>
+                                </div>
+                                <div class="flex-1">
+                                    <span class="font-bold text-white">💬 OpenAI GPT</span>
+                                    <p class="text-sm text-yellow-400 mt-1">⚠️ Không miễn phí</p>
+                                    <p class="text-xs text-cyan-400 mt-1.5">
+                                        🔑 Lấy key: <a href="https://platform.openai.com/api-keys" target="_blank" class="underline hover:text-white">platform.openai.com</a>
+                                    </p>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                    <div class="mb-6">
+                        <label class="block font-semibold text-gray-200 mb-2">🔑 API Key</label>
+                        <input type="password" id="api-key" placeholder="Dán khóa API vào đây…" 
+                            class="w-full p-3.5 border-2 border-gray-600/50 rounded-xl bg-black/30 text-gray-100 focus:outline-none focus:border-cyan-400 input-glow transition-all text-base">
+                        <p id="key-hint" class="text-sm text-gray-400 mt-2">Chọn mô hình để xem hướng dẫn lấy khóa</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <button id="save-api" class="flex-1 gradient-main text-white py-3.5 rounded-xl font-semibold hover:shadow-neon-strong transition-all transform hover:-translate-y-0.5 active:translate-y-0">
+                            <i class="fa fa-save mr-2"></i> Kết Nối
+                        </button>
+                        <button id="close-modal" class="px-5 py-3.5 border-2 border-gray-600/50 rounded-xl font-medium hover:bg-white/5 transition-all text-gray-300">
+                            Đóng
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <main class="flex-grow container mx-auto px-4 py-6 md:py-8 relative z-10">
+        <div class="max-w-3xl mx-auto">
+            <div id="welcome-section" class="mb-5 text-center">
+                <h2 class="text-[clamp(1.5rem,3vw,2rem)] font-bold gradient-text mb-2">Chào mừng đến với Trace AI</h2>
+                <p id="mode-subtitle" class="text-gray-400 max-w-lg mx-auto">Hệ thống trí tuệ nhân tạo — đặt câu hỏi, khám phá tri thức, giải đáp mọi thắc mắc</p>
+            </div>
+
+            <!-- Chọn chế độ chat -->
+            <div class="flex gap-2 mb-4 overflow-x-auto no-scrollbar pb-1 justify-start sm:justify-center" id="mode-tabs">
+                <button type="button" class="mode-tab active" data-mode="chat">
+                    <span class="tab-emoji">💬</span> Chat
+                </button>
+                <button type="button" class="mode-tab" data-mode="study">
+                    <span class="tab-emoji">📚</span> Học tập
+                </button>
+                <button type="button" class="mode-tab" data-mode="debug">
+                    <span class="tab-emoji">🔍</span> Sửa lỗi
+                </button>
+                <button type="button" class="mode-tab" data-mode="mindmap">
+                    <span class="tab-emoji">🌳</span> Sơ đồ tư duy
+                </button>
+                <button type="button" class="mode-tab" data-mode="quiz">
+                    <span class="tab-emoji">📝</span> Bài kiểm tra
+                </button>
+                <button type="button" class="mode-tab" data-mode="progress">
+                    <span class="tab-emoji">📈</span> Lộ trình
+                </button>
+            </div>
+
+            <div class="glass-panel rounded-3xl neon-border overflow-hidden flex flex-col" style="height: 70vh; min-height: 500px;">
+                <!-- Thanh tiêu đề chế độ -->
+                <div class="px-4 md:px-6 py-2.5 border-b border-cyan-500/15 bg-black/20 flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span id="mode-icon" class="text-base">💬</span>
+                        <span id="mode-title" class="text-sm font-semibold text-gray-200 truncate">Chat tổng hợp</span>
+                    </div>
+                    <button type="button" id="clear-btn" class="text-xs text-gray-400 hover:text-white px-2.5 py-1.5 rounded-lg border border-white/10 hover:border-cyan-400/50 transition-all flex-shrink-0">
+                        <i class="fa fa-trash-o mr-1"></i> Xóa hội thoại
+                    </button>
+                </div>
+
+                <div id="chat-messages" class="flex-1 p-4 md:p-6 overflow-y-auto space-y-4"></div>
+
+                <div id="input-area" class="p-4 border-t border-cyan-500/15 bg-black/20">
+                    <div id="chips" class="flex gap-2 mb-3 overflow-x-auto no-scrollbar"></div>
+                    <form id="chat-form" class="flex gap-3 items-end">
+                        <textarea id="user-input" rows="1" placeholder="Nhập câu hỏi…" 
+                            class="flex-1 px-5 py-3 rounded-xl border-2 border-gray-600/50 bg-black/30 text-gray-100 focus:outline-none focus:border-cyan-400 input-glow transition-all text-base" required></textarea>
+                        <button type="submit" id="send-btn" 
+                            class="w-11 h-11 rounded-xl flex items-center justify-center transition-all flex-shrink-0 bg-gray-700/50 cursor-not-allowed text-gray-500" disabled>
+                            <i class="fa fa-paper-plane"></i>
+                        </button>
+                    </form>
+                    <p id="input-help" class="text-[11px] text-gray-500 mt-2 hidden sm:block">Enter để gửi • Shift + Enter để xuống dòng</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="py-4 text-center text-sm text-gray-500 relative z-10">
+        <p>© 2026 Trace AI — Hệ thống trí tuệ nhân tạo • Powered by neural network 💙</p>
+    </footer>
+
+    <script>
+        const MODELS = {
+            'gemini-flash-lite': {
+                name: 'Gemini Flash-Lite',
+                provider: 'gemini',
+                model: 'gemini-3.5-flash-lite',
+                endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent',
+                hint: '✅ Miễn phí vĩnh viễn | Lấy key: aistudio.google.com/apikey'
+            },
+            'groq-llama': {
+                name: 'Groq Llama 3.3 70B',
+                provider: 'groq',
+                model: 'llama-3.3-70b-versatile',
+                endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+                hint: '✅ Miễn phí | Nhanh nhất | Lấy key: console.groq.com/keys'
+            },
+            'openrouter': {
+                name: 'OpenRouter',
+                provider: 'openrouter',
+                model: 'qwen/qwen-2.5-72b-instruct:free',
+                endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+                hint: '✅ 50 lượt/ngày miễn phí | Lấy key: openrouter.ai/keys'
+            },
+            'deepseek': {
+                name: 'DeepSeek V4 Flash',
+                provider: 'deepseek',
+                model: 'deepseek-chat',
+                endpoint: 'https://api.deepseek.com/v1/chat/completions',
+                hint: '✅ ~60 lượt/ngày miễn phí | Lấy key: platform.deepseek.com'
+            },
+            'openai': {
+                name: 'OpenAI GPT',
+                provider: 'openai',
+                model: 'gpt-3.5-turbo',
+                endpoint: 'https://api.openai.com/v1/chat/completions',
+                hint: '⚠️ Không miễn phí | Lấy key: platform.openai.com'
+            }
+        };
+
+        // ===== CÁC CHẾ ĐỘ CHAT =====
+        const MODES = {
+            chat: {
+                label: 'Chat',
+                title: 'Chat tổng hợp',
+                emoji: '💬',
+                subtitle: 'Hệ thống trí tuệ nhân tạo — đặt câu hỏi, khám phá tri thức, giải đáp mọi thắc mắc',
+                placeholder: 'Nhập câu hỏi…',
+                systemPrompt: `Bạn là Trace AI — trợ lý thông minh, thân thiện, dễ hiểu. Nhiệm vụ:
+- Giải thích rõ ràng, đơn giản, phù hợp người Việt
+- Dùng ví dụ thực tế, dễ liên hệ
+- Trình bày có cấu trúc, gọn gàng
+- Trả lời bằng tiếng Việt trừ khi yêu cầu khác
+- Giọng văn thân thiện, khuyến khích tư duy`,
+                welcome: `<p class="font-bold text-cyan-300 mb-2">👋 Xin chào! Tôi là Trace AI</p>
+                    <p class="text-gray-300 mb-2">Hệ thống đã sẵn sàng nhận lệnh. Tôi có thể giải thích, phân tích, trả lời mọi câu hỏi.</p>
+                    <p class="text-gray-400 mb-3">Để bắt đầu → nhấn <strong class="text-cyan-300">"Cấu Hình API"</strong> → chọn mô hình → lấy khóa → dán vào ô → Lưu nhé!</p>
+                    <div class="bg-black/30 rounded-lg p-3 text-sm text-gray-400 border-l-2 border-cyan-400">
+                        <p class="font-medium text-gray-300 mb-1">💡 Ví dụ câu hỏi:</p>
+                        <ul class="space-y-1">
+                            <li>• "Giải thích định luật II Newton bằng ví dụ đời thực"</li>
+                            <li>• "Viết code Python tính giai thừa & giải thích từng dòng"</li>
+                            <li>• "Tóm tắt cốt truyện & ý nghĩa tác phẩm 'Tắt đèn'"</li>
+                        </ul>
+                    </div>`,
+                chips: [
+                    'Giải thích định luật II Newton bằng ví dụ đời thực',
+                    'Viết code Python tính giai thừa & giải thích từng dòng',
+                    'Tóm tắt cốt truyện & ý nghĩa tác phẩm "Tắt đèn"'
+                ]
+            },
+            study: {
+                label: 'Học tập',
+                title: 'Học tập — Gia sư AI',
+                emoji: '📚',
+                subtitle: 'Gia sư AI — giảng bài từng bước, ví dụ dễ hiểu, câu hỏi kiểm tra kiến thức',
+                placeholder: 'Nhập môn/chủ đề muốn học, hoặc dán bài tập cần giải…',
+                systemPrompt: `Bạn là Trace AI ở chế độ HỌC TẬP — một gia sư kiên nhẫn, tận tâm dành cho học sinh, sinh viên Việt Nam.
+Nguyên tắc:
+- Trả lời bằng tiếng Việt trừ khi người dùng yêu cầu khác.
+- Nếu chưa rõ trình độ/lớp của người học và điều đó ảnh hưởng đến cách giảng, hãy giả định mức phổ thông và nói rõ giả định, hoặc hỏi ngắn gọn một câu.
+- Giảng theo cấu trúc: (1) Ý chính trong 1–2 câu, (2) Giải thích từng bước, dễ hiểu, (3) Ví dụ thực tế hoặc ví dụ có số liệu, (4) Lỗi thường gặp / mẹo ghi nhớ.
+- Khi giải bài tập: trình bày lời giải từng bước, nêu công thức hoặc kiến thức đã dùng, và kiểm tra lại kết quả. Giải thích TẠI SAO chứ không chỉ đưa đáp án.
+- Dùng phép loại suy, hình dung đời thường để làm khái niệm khó trở nên dễ hiểu.
+- Cuối mỗi câu trả lời, thêm mục "📝 Kiểm tra nhanh" với 1–3 câu hỏi ngắn (có thể kèm gợi ý, không kèm đáp án) để người học tự luyện. Khi người học trả lời, hãy nhận xét và sửa lỗi nhẹ nhàng.
+- Nếu được yêu cầu, có thể tóm tắt bài, lập sơ đồ ý, tạo đề ôn tập hoặc kế hoạch học.
+- Giọng văn thân thiện, động viên, không phán xét. Không bịa thông tin; nếu không chắc, hãy nói rõ.`,
+                welcome: `<p class="font-bold text-emerald-300 mb-2">📚 Chế độ Học tập — Gia sư AI</p>
+                    <p class="text-gray-300 mb-3">Mình sẽ giảng bài từng bước, đưa ví dụ dễ hiểu và có câu hỏi kiểm tra cuối mỗi phần để bạn nắm chắc kiến thức.</p>
+                    <div class="bg-black/30 rounded-lg p-3 text-sm text-gray-400 border-l-2 border-emerald-400">
+                        <p class="font-medium text-gray-300 mb-1">🎯 Bạn có thể nhờ mình:</p>
+                        <ul class="space-y-1">
+                            <li>• Giảng một khái niệm / bài học theo từng bước</li>
+                            <li>• Giải bài tập kèm giải thích cách làm</li>
+                            <li>• Tóm tắt bài, lập sơ đồ ý, tạo đề ôn tập</li>
+                            <li>• Lập kế hoạch học cho một môn hoặc kỳ thi</li>
+                        </ul>
+                        <p class="mt-2 text-gray-500">Mẹo: hãy cho mình biết lớp/trình độ để giảng đúng mức nhé.</p>
+                    </div>`,
+                chips: [
+                    'Giải thích khái niệm đạo hàm cho học sinh lớp 11',
+                    'Giải bài tập này và giải thích từng bước:',
+                    'Tạo 5 câu trắc nghiệm ôn tập về chủ đề:',
+                    'Tóm tắt bài học này thành sơ đồ ý chính:',
+                    'Lập kế hoạch học 4 tuần cho môn:'
+                ]
+            },
+            debug: {
+                label: 'Sửa lỗi',
+                title: 'Sửa lỗi — Debug code',
+                emoji: '🔍',
+                subtitle: 'Dán code + thông báo lỗi — AI tìm nguyên nhân, sửa lỗi và giải thích cách khắc phục',
+                placeholder: 'Dán code lỗi và thông báo lỗi vào đây (Shift + Enter để xuống dòng)…',
+                systemPrompt: `Bạn là Trace AI ở chế độ SỬA LỖI — một kỹ sư phần mềm cao cấp chuyên debug và review code.
+Nguyên tắc:
+- Trả lời bằng tiếng Việt (giữ nguyên thuật ngữ kỹ thuật, tên biến, thông báo lỗi bằng tiếng Anh).
+- Với mỗi yêu cầu, trình bày theo cấu trúc:
+  1. **🔍 Nguyên nhân**: giải thích ngắn gọn, chính xác lỗi nằm ở đâu và vì sao xảy ra (chỉ rõ dòng/đoạn nếu xác định được).
+  2. **🛠 Cách sửa**: đưa code đã sửa trong khối code có ghi rõ ngôn ngữ (ví dụ \`\`\`python). Chỉ thay đổi những gì cần thiết, giữ nguyên phong cách của người dùng.
+  3. **💡 Giải thích**: nêu rõ đã thay đổi gì và vì sao nó hoạt động.
+  4. **✅ Phòng tránh**: 1–3 mẹo để không lặp lại lỗi này (nếu phù hợp).
+- Nếu thiếu thông tin để chẩn đoán (ngôn ngữ, phiên bản, thông báo lỗi, môi trường chạy), hãy nêu giả định hợp lý hoặc hỏi lại ngắn gọn các thông tin còn thiếu — đừng đoán bừa.
+- Nếu có nhiều nguyên nhân khả dĩ, liệt kê theo thứ tự khả năng xảy ra và cách kiểm tra từng cái.
+- Phát hiện thêm các vấn đề khác (bug tiềm ẩn, bảo mật, hiệu năng) nếu thấy, nhưng đặt ở mục riêng, ngắn gọn, không làm loãng lỗi chính.
+- Không bịa tên hàm/thư viện không tồn tại. Nếu không chắc, hãy nói rõ.`,
+                welcome: `<p class="font-bold text-rose-300 mb-2">🛠 Chế độ Sửa lỗi — Debug cùng AI</p>
+                    <p class="text-gray-300 mb-3">Dán đoạn code lỗi và thông báo lỗi (nếu có). Mình sẽ tìm nguyên nhân, đưa code đã sửa và giải thích cách khắc phục.</p>
+                    <div class="bg-black/30 rounded-lg p-3 text-sm text-gray-400 border-l-2 border-rose-400">
+                        <p class="font-medium text-gray-300 mb-1">📋 Để mình sửa chính xác, hãy gửi kèm:</p>
+                        <ul class="space-y-1">
+                            <li>• Đoạn code gặp lỗi (càng đầy đủ càng tốt)</li>
+                            <li>• Thông báo lỗi / hành vi sai so với mong muốn</li>
+                            <li>• Ngôn ngữ, phiên bản, môi trường chạy</li>
+                        </ul>
+                        <p class="mt-2 text-gray-500">Mẹo: dùng Shift + Enter để xuống dòng khi dán code.</p>
+                    </div>`,
+                chips: [
+                    'Code của tôi báo lỗi, hãy tìm và sửa giúp:',
+                    'Giải thích thông báo lỗi này nghĩa là gì:',
+                    'Code chạy nhưng kết quả sai, hãy kiểm tra logic:',
+                    'Review code này và chỉ ra bug tiềm ẩn:'
+                ]
+            }
+        };
+
+        // ===== CHẾ ĐỘ: SƠ ĐỒ TƯ DUY & BÀI KIỂM TRA =====
+        Object.assign(MODES, {
+            mindmap: {
+                label: 'Sơ đồ tư duy',
+                title: 'Sơ đồ tư duy',
+                emoji: '🌳',
+                subtitle: 'Nhập chủ đề hoặc nội dung bài học — AI sẽ vẽ sơ đồ tư duy cho bạn',
+                placeholder: 'Nhập chủ đề, hoặc dán nội dung bài học cần vẽ sơ đồ tư duy…',
+                systemPrompt: `Bạn là Trace AI ở chế độ SƠ ĐỒ TƯ DUY — chuyên hệ thống hóa kiến thức thành sơ đồ tư duy rõ ràng cho học sinh, sinh viên Việt Nam.
+Nguyên tắc bắt buộc về định dạng:
+- Trả lời bằng tiếng Việt. Mở đầu bằng 1 câu giới thiệu ngắn.
+- Sau đó xuất sơ đồ trong MỘT khối code có nhãn "mindmap" theo đúng cú pháp dàn ý thụt lề sau:
+  + Dòng đầu tiên là chủ đề trung tâm (không có dấu gạch đầu dòng).
+  + Mỗi nhánh bắt đầu bằng "- ". Ý con thụt vào 2 dấu cách cho mỗi cấp.
+  + Mỗi ý chỉ là cụm từ ngắn (tối đa khoảng 8 từ), không viết câu dài, không dùng ký tự ** hay markdown trong sơ đồ.
+- Cấu trúc: 4–7 nhánh chính, tối đa 4 cấp, mỗi nhánh có 2–5 ý con. Sắp xếp logic (ví dụ: khái niệm → đặc điểm → phân loại → ví dụ → ứng dụng) và phù hợp với nội dung người dùng yêu cầu.
+- Nếu người dùng dán nội dung bài học, chỉ dùng thông tin trong nội dung đó, không bịa thêm.
+- Ví dụ định dạng:
+\`\`\`mindmap
+Quang hợp
+- Khái niệm
+  - Cây tạo chất hữu cơ từ ánh sáng
+- Nguyên liệu
+  - CO2
+  - Nước
+  - Ánh sáng
+- Sản phẩm
+  - Glucozơ
+  - Khí O2
+\`\`\`
+- Sau khối sơ đồ, thêm 2–3 dòng gợi ý ngắn: cách ghi nhớ, hoặc đề nghị mở rộng/chỉnh sơ đồ.
+- Khi người dùng yêu cầu chỉnh sửa (thêm nhánh, rút gọn, đổi cách chia...), hãy xuất lại TOÀN BỘ sơ đồ đã cập nhật trong một khối "mindmap" mới.`,
+                welcome: `<p class="font-bold text-violet-300 mb-2">🌳 Chế độ Sơ đồ tư duy</p>
+                    <p class="text-gray-300 mb-3">Gửi cho mình một chủ đề hoặc dán nội dung bài học, mình sẽ vẽ thành sơ đồ tư duy có các nhánh màu sắc, dễ nhìn và dễ nhớ.</p>
+                    <div class="bg-black/30 rounded-lg p-3 text-sm text-gray-400 border-l-2 border-violet-400">
+                        <p class="font-medium text-gray-300 mb-1">✨ Ví dụ:</p>
+                        <ul class="space-y-1">
+                            <li>• "Sơ đồ tư duy về chu trình nước"</li>
+                            <li>• "Vẽ sơ đồ tư duy tóm tắt Chiến thắng Điện Biên Phủ"</li>
+                            <li>• Dán đoạn bài học rồi nhờ vẽ sơ đồ</li>
+                            <li>• Sau khi có sơ đồ: "Thêm nhánh ví dụ" hoặc "Rút gọn lại"</li>
+                        </ul>
+                    </div>`,
+                chips: [
+                    'Vẽ sơ đồ tư duy về chu trình nước',
+                    'Sơ đồ tư duy về các thì trong tiếng Anh',
+                    'Vẽ sơ đồ tư duy cho nội dung sau:',
+                    'Thêm một nhánh ví dụ vào sơ đồ',
+                    'Rút gọn sơ đồ còn các ý chính'
+                ]
+            },
+            quiz: {
+                label: 'Bài kiểm tra',
+                title: 'Bài kiểm tra có lời giải',
+                emoji: '📝',
+                subtitle: 'Nhập chủ đề — AI tạo bài kiểm tra kèm đáp án và lời giải chi tiết',
+                placeholder: 'Nhập chủ đề, lớp/trình độ, số câu… (vd: Toán 9 – Hệ phương trình, 10 câu)',
+                systemPrompt: `Bạn là Trace AI ở chế độ BÀI KIỂM TRA — giáo viên ra đề và chấm bài cho học sinh, sinh viên Việt Nam.
+Khi người dùng yêu cầu tạo bài kiểm tra:
+- Trả lời bằng tiếng Việt. Nếu người dùng chưa nêu rõ, giả định mức độ phổ thông, 10 câu trắc nghiệm 4 đáp án (A, B, C, D), độ khó tăng dần (nhận biết → thông hiểu → vận dụng). Nếu người dùng yêu cầu tự luận, hỗn hợp hoặc số câu khác thì làm theo.
+- Cấu trúc câu trả lời, theo đúng thứ tự:
+  1. Dòng tiêu đề bài kiểm tra: tên chủ đề, đối tượng, số câu, thời gian gợi ý.
+  2. Danh sách câu hỏi: "Câu 1.", "Câu 2."... Với trắc nghiệm, mỗi đáp án A. B. C. D. nằm trên một dòng riêng. TUYỆT ĐỐI không để lộ đáp án trong phần đề.
+  3. Sau phần đề, in đúng một dòng phân cách duy nhất: ===ĐÁP ÁN===
+  4. Phần đáp án & lời giải: với mỗi câu ghi "Câu N: Đáp án X" rồi giải thích ngắn gọn, rõ ràng vì sao đúng (và vì sao các đáp án còn lại sai nếu cần), có các bước tính toán với câu bài tập.
+- Viết công thức bằng văn bản thuần (ví dụ x^2, căn(x), a/b), không dùng LaTeX.
+- Nội dung phải chính xác, kiểm tra lại đáp án trước khi trả lời; không bịa dữ kiện. Nếu chủ đề quá rộng hoặc không rõ, hãy chọn phạm vi hợp lý và nêu rõ phạm vi đó.
+Khi người dùng gửi bài làm của họ (ví dụ "1A 2C 3B..."): chấm điểm theo bài kiểm tra gần nhất, nêu số câu đúng/tổng, chỉ ra câu sai kèm giải thích, và động viên. Phần chấm bài không cần dòng ===ĐÁP ÁN===.
+Khi được yêu cầu, có thể đổi độ khó, thêm câu hỏi, hoặc tạo đề mới cùng chủ đề.`,
+                welcome: `<p class="font-bold text-amber-300 mb-2">📝 Chế độ Bài kiểm tra</p>
+                    <p class="text-gray-300 mb-3">Cho mình biết chủ đề (và lớp, số câu nếu muốn), mình sẽ ra đề kiểm tra. Đáp án và lời giải chi tiết được ẩn sẵn, bạn làm xong rồi bấm xem nhé!</p>
+                    <div class="bg-black/30 rounded-lg p-3 text-sm text-gray-400 border-l-2 border-amber-400">
+                        <p class="font-medium text-gray-300 mb-1">✍️ Ví dụ:</p>
+                        <ul class="space-y-1">
+                            <li>• "Tạo bài kiểm tra 10 câu trắc nghiệm về Hệ phương trình lớp 9"</li>
+                            <li>• "Đề 5 câu tự luận về Cách mạng tháng Tám"</li>
+                            <li>• Làm xong, gửi "1A 2C 3B…" để mình chấm điểm</li>
+                        </ul>
+                    </div>`,
+                chips: [
+                    'Tạo bài kiểm tra 10 câu trắc nghiệm về chủ đề:',
+                    'Tạo đề 5 câu tự luận có lời giải về:',
+                    'Tạo bài kiểm tra khó hơn cùng chủ đề này',
+                    'Bài làm của tôi là: 1A 2B 3C 4D 5A — hãy chấm điểm'
+                ]
+            }
+        });
+
+        // ===== CHẾ ĐỘ: LỘ TRÌNH HỌC TẬP (không phải khung chat) =====
+        MODES.progress = {
+            label: 'Lộ trình',
+            title: 'Lộ trình học tập',
+            emoji: '📈',
+            subtitle: 'Theo dõi các chủ đề đã học, sơ đồ tư duy đã tạo và kết quả bài kiểm tra',
+            placeholder: '',
+            systemPrompt: '',
+            welcome: '',
+            chips: []
+        };
+
+        let CONFIG = {
+            selectedModel: localStorage.getItem('selected_model') || 'gemini-flash-lite',
+            apiKey: localStorage.getItem('api_key') || '',
+            isConfigured: false
+        };
+
+        // Lịch sử hội thoại riêng cho từng chế độ
+        const HISTORY = { chat: [], study: [], debug: [], mindmap: [], quiz: [], progress: [] };
+        let currentMode = localStorage.getItem('chat_mode');
+        if (!MODES[currentMode]) currentMode = 'chat';
+        let pendingCount = 0;
+
+        const modal = document.getElementById('api-modal');
+        const overlay = document.getElementById('modal-overlay');
+        const settingsBtn = document.getElementById('settings-btn');
+        const closeModal = document.getElementById('close-modal');
+        const saveBtn = document.getElementById('save-api');
+        const apiKeyInput = document.getElementById('api-key');
+        const statusBar = document.getElementById('status-bar');
+        const statusText = document.getElementById('status-text');
+        const sendBtn = document.getElementById('send-btn');
+        const chatForm = document.getElementById('chat-form');
+        const userInput = document.getElementById('user-input');
+        const chatMessages = document.getElementById('chat-messages');
+        const keyHint = document.getElementById('key-hint');
+        const modelRadios = document.querySelectorAll('input[name="model"]');
+        const modeTabs = document.querySelectorAll('.mode-tab');
+        const chipsBox = document.getElementById('chips');
+        const clearBtn = document.getElementById('clear-btn');
+
+        function init() {
+            modelRadios.forEach(radio => {
+                radio.checked = radio.value === CONFIG.selectedModel;
+                updateModelCardStyle(radio);
+                radio.addEventListener('change', () => {
+                    modelRadios.forEach(r => updateModelCardStyle(r));
+                    updateKeyHint();
+                });
+            });
+            apiKeyInput.value = CONFIG.apiKey;
+            updateKeyHint();
+            checkConfigured();
+            updateStatus();
+            setMode(currentMode);
+        }
+
+        function updateModelCardStyle(radio) {
+            const label = radio.closest('label');
+            const dot = label.querySelector('.radio-indicator span');
+            if (radio.checked) {
+                label.classList.add('selected');
+                label.style.borderColor = 'rgba(0, 240, 255, 0.6)';
+                label.style.background = 'linear-gradient(135deg, rgba(0, 240, 255, 0.1), rgba(123, 47, 253, 0.1))';
+                if (dot) dot.style.transform = 'scale(1)';
+            } else {
+                label.classList.remove('selected');
+                label.style.borderColor = 'rgba(255,255,255,0.08)';
+                label.style.background = 'rgba(30, 41, 59, 0.5)';
+                if (dot) dot.style.transform = 'scale(0)';
+            }
+        }
+
+        function updateKeyHint() {
+            const selected = document.querySelector('input[name="model"]:checked');
+            if (selected && MODELS[selected.value]) {
+                keyHint.textContent = MODELS[selected.value].hint;
+            }
+        }
+
+        function checkConfigured() {
+            CONFIG.isConfigured = !!(CONFIG.apiKey && CONFIG.selectedModel);
+        }
+
+        function updateStatus() {
+            if (CONFIG.isConfigured) {
+                const modelInfo = MODELS[CONFIG.selectedModel];
+                statusText.innerHTML = `<i class="fa fa-check-circle mr-1.5"></i> Đã kết nối: <strong>${modelInfo.name}</strong> — Trace AI sẵn sàng!`;
+                statusBar.className = 'border-b border-green-500/20 py-2.5 px-4 text-center text-sm transition-all duration-300 bg-green-500/10';
+                statusText.className = 'text-green-300 font-medium';
+                sendBtn.disabled = false;
+                sendBtn.className = 'w-11 h-11 rounded-xl flex items-center justify-center transition-all flex-shrink-0 gradient-main text-white hover:shadow-neon-strong transform hover:-translate-y-0.5 active:translate-y-0';
+            } else {
+                statusText.innerHTML = `<i class="fa fa-exclamation-triangle mr-1.5"></i> Chưa cấu hình — Nhấn "Cấu Hình API" để bắt đầu`;
+                statusBar.className = 'border-b border-yellow-500/20 py-2.5 px-4 text-center text-sm transition-all duration-300 bg-yellow-500/10';
+                statusText.className = 'text-yellow-300 font-medium';
+                sendBtn.disabled = true;
+                sendBtn.className = 'w-11 h-11 rounded-xl flex items-center justify-center transition-all flex-shrink-0 bg-gray-700/50 cursor-not-allowed text-gray-500';
+            }
+        }
+
+        // ===== CHUYỂN CHẾ ĐỘ =====
+        function setMode(mode) {
+            if (!MODES[mode]) return;
+            currentMode = mode;
+            try { localStorage.setItem('chat_mode', mode); } catch (e) {}
+            const m = MODES[mode];
+
+            modeTabs.forEach(tab => tab.classList.toggle('active', tab.dataset.mode === mode));
+            document.getElementById('mode-subtitle').textContent = m.subtitle;
+            document.getElementById('mode-title').textContent = m.title;
+            document.getElementById('mode-icon').textContent = m.emoji;
+            userInput.placeholder = m.placeholder;
+            document.getElementById('input-area').classList.toggle('hidden', mode === 'progress');
+            clearBtn.innerHTML = '<i class="fa fa-trash-o mr-1"></i> ' + (mode === 'progress' ? 'Xóa lộ trình' : 'Xóa hội thoại');
+
+            // Gợi ý nhanh
+            chipsBox.innerHTML = '';
+            m.chips.forEach(text => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'chip';
+                b.textContent = text.length > 46 ? text.slice(0, 44) + '…' : text;
+                b.title = text;
+                b.addEventListener('click', () => {
+                    userInput.value = text.endsWith(':') ? text + '\n' : text;
+                    autoGrow();
+                    userInput.focus();
+                });
+                chipsBox.appendChild(b);
+            });
+
+            renderChat();
+        }
+
+        modeTabs.forEach(tab => tab.addEventListener('click', () => setMode(tab.dataset.mode)));
+
+        function renderChat() {
+            chatMessages.innerHTML = '';
+            if (currentMode === 'progress') { renderProgress(); return; }
+            const m = MODES[currentMode];
+            const welcome = document.createElement('div');
+            welcome.className = 'flex gap-3 md:gap-4';
+            welcome.innerHTML = `
+                <div class="w-9 h-9 md:w-10 md:h-10 rounded-xl gradient-main flex items-center justify-center text-white flex-shrink-0 shadow-neon">
+                    <i class="fa fa-microchip"></i>
+                </div>
+                <div class="chat-bubble-ai p-4 md:p-5 max-w-[88%]">${m.welcome}</div>`;
+            chatMessages.appendChild(welcome);
+            HISTORY[currentMode].forEach(msg => appendMessage(msg.content, msg.role === 'user' ? 'user' : 'ai', msg.error));
+            if (pendingCount > 0 && pendingModeSet.has(currentMode)) addLoading(currentMode);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        clearBtn.addEventListener('click', () => {
+            if (currentMode === 'progress') {
+                if (!confirm('Xóa toàn bộ lộ trình học tập (chủ đề, sơ đồ tư duy, bài kiểm tra)?')) return;
+                PROGRESS = { topics: [], mindmaps: [], quizzes: [] };
+                saveProgress();
+                renderProgress();
+                return;
+            }
+            if (HISTORY[currentMode].length === 0) return;
+            if (!confirm('Xóa toàn bộ hội thoại trong chế độ "' + MODES[currentMode].label + '"?')) return;
+            HISTORY[currentMode] = [];
+            renderChat();
+        });
+
+        settingsBtn.addEventListener('click', () => modal.classList.remove('hidden'));
+        const closeModalFunc = () => modal.classList.add('hidden');
+        closeModal.addEventListener('click', closeModalFunc);
+        overlay.addEventListener('click', closeModalFunc);
+
+        saveBtn.addEventListener('click', () => {
+            const selectedRadio = document.querySelector('input[name="model"]:checked');
+            const key = apiKeyInput.value.trim();
+            if (!selectedRadio) { alert('Vui lòng chọn một mô hình!'); return; }
+            if (!key) { alert('Vui lòng nhập API Key!'); return; }
+            CONFIG.selectedModel = selectedRadio.value;
+            CONFIG.apiKey = key;
+            localStorage.setItem('selected_model', CONFIG.selectedModel);
+            localStorage.setItem('api_key', CONFIG.apiKey);
+            checkConfigured();
+            updateStatus();
+            closeModalFunc();
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-20 right-4 bg-green-500/90 text-white px-6 py-3 rounded-xl shadow-lg z-50 flex items-center gap-2 backdrop-blur';
+            notification.innerHTML = '<i class="fa fa-check-circle"></i> Kết nối thành công!';
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        });
+
+        // ===== Ô NHẬP =====
+        function autoGrow() {
+            userInput.style.height = 'auto';
+            userInput.style.height = Math.min(userInput.scrollHeight, 160) + 'px';
+        }
+        userInput.addEventListener('input', autoGrow);
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+                e.preventDefault();
+                chatForm.requestSubmit();
+            }
+        });
+
+        const pendingModeSet = new Set();
+
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const question = userInput.value.trim();
+            if (!question || !CONFIG.isConfigured) return;
+
+            const mode = currentMode;
+            HISTORY[mode].push({ role: 'user', content: question });
+            appendMessage(question, 'user');
+            userInput.value = '';
+            autoGrow();
+
+            pendingCount++;
+            pendingModeSet.add(mode);
+            addLoading(mode);
+            try {
+                const answer = await callAI(mode);
+                HISTORY[mode].push({ role: 'assistant', content: answer });
+                const sigBefore = progressSig();
+                recordProgress(mode, answer, question);
+                if (progressSig() !== sigBefore) showToast('📈 Đã cập nhật Lộ trình học tập');
+                // Nếu AI quên gắn marker chủ đề, nhờ AI xác định chủ đề bằng một lệnh gọi nhỏ
+                if (mode === 'study' && !/\[\[\s*CHỦ[_ ]ĐỀ\s*:/i.test(answer)) fallbackTopic(question);
+                if (currentMode === 'progress') renderProgress();
+                finishPending(mode);
+                if (currentMode === mode) appendMessage(answer, 'ai');
+            } catch (err) {
+                const errText = `❌ **Lỗi kết nối:** ${err.message}\n\n💡 **Kiểm tra:**\n• API Key đã đúng chưa\n• Hạn mức sử dụng còn không\n• Thay đổi nhà cung cấp khác`;
+                HISTORY[mode].push({ role: 'assistant', content: errText, error: true });
+                finishPending(mode);
+                if (currentMode === mode) appendMessage(errText, 'ai', true);
+                console.error(err);
+            }
+        });
+
+        function finishPending(mode) {
+            pendingCount = Math.max(0, pendingCount - 1);
+            pendingModeSet.delete(mode);
+            document.querySelectorAll('[data-loading="1"]').forEach(el => el.remove());
+        }
+
+        async function callAI(mode, override) {
+            const modelInfo = MODELS[CONFIG.selectedModel];
+            const systemPrompt = override ? override.system : buildSystemPrompt(mode);
+
+            // Lấy tối đa 12 tin nhắn gần nhất, bỏ tin báo lỗi
+            const turns = override ? override.turns : HISTORY[mode].filter(m => !m.error).slice(-12);
+
+            if (modelInfo.provider === 'gemini') {
+                const url = `${modelInfo.endpoint}?key=${CONFIG.apiKey}`;
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        systemInstruction: { parts: [{ text: systemPrompt }] },
+                        contents: turns.map(m => ({
+                            role: m.role === 'user' ? 'user' : 'model',
+                            parts: [{ text: m.content }]
+                        }))
+                    })
+                });
+                if (!res.ok) throw new Error(`Lỗi ${res.status} — Kiểm tra key hoặc hạn mức`);
+                const data = await res.json();
+                if (!data.candidates?.[0]?.content?.parts?.[0]?.text) throw new Error('Không nhận được phản hồi');
+                return data.candidates[0].content.parts.map(p => p.text || '').join('');
+            } else {
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${CONFIG.apiKey}`
+                };
+                if (modelInfo.provider === 'openrouter') {
+                    headers['HTTP-Referer'] = window.location.href;
+                    headers['X-Title'] = 'Trace AI';
+                }
+                const res = await fetch(modelInfo.endpoint, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({
+                        model: modelInfo.model,
+                        messages: [
+                            { role: 'system', content: systemPrompt },
+                            ...turns.map(m => ({ role: m.role, content: m.content }))
+                        ],
+                        temperature: mode === 'debug' ? 0.3 : 0.7
+                    })
+                });
+                if (!res.ok) throw new Error(`Lỗi ${res.status}`);
+                const data = await res.json();
+                return data.choices[0].message.content;
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatContent(text) {
+            // Ẩn các marker theo dõi lộ trình khỏi nội dung hiển thị
+            text = text.replace(MARKER_STRIP_RE, '').replace(/\s+$/, '');
+            // Bài kiểm tra: tách phần đề và phần đáp án (ẩn sẵn)
+            const ansRe = /={3,}\s*ĐÁP ÁN[^=\n]*={3,}/i;
+            if (ansRe.test(text)) {
+                const [q, ...rest] = text.split(ansRe);
+                return formatContent(q) + answerBlock(formatContent(rest.join('\n')));
+            }
+            const stash = [];
+            // Khối code ```lang ... ```
+            let protectedText = text.replace(/```([\s\S]*?)```/g, (match, inner) => {
+                stash.push({ type: 'block', inner });
+                return `@@STASH_${stash.length - 1}@@`;
+            });
+            // Code nội dòng `...`
+            protectedText = protectedText.replace(/`([^`\n]+)`/g, (match, inner) => {
+                stash.push({ type: 'inline', inner });
+                return `@@STASH_${stash.length - 1}@@`;
+            });
+
+            let result = escapeHtml(protectedText);
+            result = result.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            result = result.replace(/^#{1,4}\s+(.+)$/gm, '<strong class="text-cyan-300">$1</strong>');
+            result = result.replace(/\n/g, '<br>');
+
+            result = result.replace(/@@STASH_(\d+)@@/g, (_, idx) => {
+                const item = stash[parseInt(idx)];
+                if (item.type === 'block') {
+                    let inner = item.inner.replace(/^\n/, '');
+                    let lang = '';
+                    const firstNl = inner.indexOf('\n');
+                    if (firstNl !== -1) {
+                        const first = inner.slice(0, firstNl).trim();
+                        if (/^[A-Za-z0-9_+#.-]{1,20}$/.test(first)) {
+                            lang = first;
+                            inner = inner.slice(firstNl + 1);
+                        }
+                    }
+                    inner = inner.replace(/\s+$/, '');
+                    if (lang.toLowerCase() === 'mindmap') return renderMindmap(inner);
+                    return `<div class="code-wrap my-3 rounded-lg overflow-hidden">
+                        <button type="button" class="copy-btn" onclick="copyCode(this)"><i class="fa fa-clipboard"></i> Sao chép</button>
+                        ${lang ? `<div class="code-lang" style="background:rgba(0,0,0,0.6)">${escapeHtml(lang)}</div>` : ''}
+                        <pre class="p-3 text-gray-200 overflow-x-auto" style="margin:0;white-space:pre"><code>${escapeHtml(inner)}</code></pre>
+                    </div>`;
+                }
+                return `<code>${escapeHtml(item.inner)}</code>`;
+            });
+            return result;
+        }
+
+        // ===== LỘ TRÌNH HỌC TẬP: lưu & hiển thị =====
+        const PROGRESS_KEY = 'trace_progress_v1';
+        const MARKER_RE = /\[\[\s*(CHỦ[_ ]ĐỀ|BÀI[_ ]KIỂM[_ ]TRA|ĐIỂM)\s*:\s*([^\]]*?)\s*\]\]/gi;
+        const MARKER_STRIP_RE = /\[\[\s*(?:CHỦ[_ ]ĐỀ|BÀI[_ ]KIỂM[_ ]TRA|ĐIỂM)\s*:[^\]]*\]\]/gi;
+
+        // AI gắn marker ẩn ở cuối câu trả lời để ứng dụng ghi lại lộ trình
+        const TRACK_RULES = {
+            study: `QUY TẮC GHI LỘ TRÌNH (bắt buộc): Nếu câu trả lời có dạy một kiến thức/chủ đề, hãy thêm MỘT dòng cuối cùng đúng định dạng:
+[[CHỦ_ĐỀ: tên chủ đề]]
+Tên chủ đề ngắn gọn (2–6 từ), dạng danh từ, viết thường trừ tên riêng, không kèm chữ "bài" hay "chủ đề" (ví dụ: vòng tuần hoàn nước). Nếu tin nhắn không phải nội dung học tập (chào hỏi, cảm ơn...) thì KHÔNG thêm dòng này. Người dùng không nhìn thấy dòng này.`,
+            mindmap: `QUY TẮC GHI LỘ TRÌNH (bắt buộc): Sau khi vẽ sơ đồ, thêm MỘT dòng cuối cùng đúng định dạng:
+[[CHỦ_ĐỀ: tên chủ đề]]
+Tên chủ đề ngắn gọn (2–6 từ), dạng danh từ, viết thường trừ tên riêng (ví dụ: vòng tuần hoàn nước). Người dùng không nhìn thấy dòng này.`,
+            quiz: `QUY TẮC GHI LỘ TRÌNH (bắt buộc):
+- Khi tạo bài kiểm tra mới, thêm MỘT dòng cuối cùng (sau phần đáp án) đúng định dạng:
+[[BÀI_KIỂM_TRA: tên chủ đề | số câu]]
+Ví dụ: [[BÀI_KIỂM_TRA: hệ phương trình lớp 9 | 10]].
+- Khi chấm bài làm của người dùng, thêm MỘT dòng cuối cùng đúng định dạng:
+[[ĐIỂM: số câu đúng/tổng số câu]]
+Ví dụ: [[ĐIỂM: 8/10]].
+Người dùng không nhìn thấy các dòng này.`
+        };
+
+        function buildSystemPrompt(mode) {
+            let p = MODES[mode].systemPrompt;
+            if (TRACK_RULES[mode]) p += '\n\n' + TRACK_RULES[mode];
+            if (mode === 'study' || mode === 'mindmap') {
+                const names = PROGRESS[mode === 'study' ? 'topics' : 'mindmaps'].slice(0, 40).map(t => t.name);
+                if (names.length) {
+                    p += `\nCác chủ đề đã có trong lộ trình: ${names.join('; ')}. Nếu người dùng hỏi lại cùng chủ đề (dù diễn đạt khác đi), hãy dùng ĐÚNG tên đã có trong marker.`;
+                }
+            }
+            return p;
+        }
+
+        function loadProgress() {
+            try {
+                const p = JSON.parse(localStorage.getItem(PROGRESS_KEY));
+                if (p && typeof p === 'object') {
+                    return { topics: p.topics || [], mindmaps: p.mindmaps || [], quizzes: p.quizzes || [] };
+                }
+            } catch (e) {}
+            return { topics: [], mindmaps: [], quizzes: [] };
+        }
+        let PROGRESS = loadProgress();
+        function saveProgress() {
+            try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(PROGRESS)); } catch (e) {}
+        }
+
+        // Chuẩn hóa tên để so khớp: bỏ dấu, chữ thường, bỏ ký tự thừa
+        function normKey(s) {
+            return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/đ/g, 'd').replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+        }
+        function cleanName(s) {
+            let t = String(s || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+            return t ? t.charAt(0).toUpperCase() + t.slice(1) : t;
+        }
+        const newId = () => 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+        function addTopic(name) {
+            const key = normKey(name);
+            if (!key) return;
+            const now = Date.now();
+            const t = PROGRESS.topics.find(x => x.key === key);
+            if (t) { t.count++; t.last = now; }
+            else PROGRESS.topics.push({ id: key, key, name: cleanName(name), count: 1, first: now, last: now });
+        }
+
+        function addMindmap(name, outline) {
+            const key = normKey(name);
+            if (!key || !outline) return;
+            const now = Date.now();
+            const mm = PROGRESS.mindmaps.find(x => x.key === key);
+            if (mm) { mm.count++; mm.last = now; mm.outline = outline; }
+            else PROGRESS.mindmaps.push({ id: newId(), key, name: cleanName(name), outline, count: 1, first: now, last: now });
+        }
+
+        function addQuiz(name, total) {
+            const now = Date.now();
+            const q = { id: newId(), name: cleanName(name) || 'Bài kiểm tra', total: total || 0, correct: null, date: now, gradedAt: null };
+            PROGRESS.quizzes.push(q);
+            return q;
+        }
+
+        function recordProgress(mode, text, question) {
+            if (mode !== 'study' && mode !== 'mindmap' && mode !== 'quiz') return;
+            const outlineMatch = text.match(/```\s*mindmap\s*\n([\s\S]*?)```/i);
+            const outline = outlineMatch ? outlineMatch[1].trim() : '';
+            let recorded = false;
+            let m;
+            MARKER_RE.lastIndex = 0;
+            while ((m = MARKER_RE.exec(text)) !== null) {
+                const label = m[1].toUpperCase().replace(/_/g, ' ');
+                const val = m[2].trim();
+                if (label === 'CHỦ ĐỀ') {
+                    if (mode === 'study') { addTopic(val); recorded = true; }
+                    else if (mode === 'mindmap' && outline) { addMindmap(val, outline); recorded = true; }
+                } else if (label === 'BÀI KIỂM TRA' && mode === 'quiz') {
+                    const parts = val.split('|');
+                    addQuiz(parts[0], parseInt(parts[1], 10) || 0);
+                    recorded = true;
+                } else if (label === 'ĐIỂM' && mode === 'quiz') {
+                    const s = val.match(/(\d+)\s*\/\s*(\d+)/);
+                    if (s) {
+                        let q = PROGRESS.quizzes[PROGRESS.quizzes.length - 1];
+                        if (!q) q = addQuiz('Bài kiểm tra', parseInt(s[2], 10));
+                        q.correct = parseInt(s[1], 10);
+                        q.total = parseInt(s[2], 10) || q.total;
+                        q.gradedAt = Date.now();
+                        recorded = true;
+                    }
+                }
+            }
+            // Dự phòng khi AI quên gắn marker
+            if (!recorded) {
+                if (mode === 'mindmap' && outline) {
+                    addMindmap(outline.split('\n')[0].replace(/^\s*(?:[-*•+]|#+)\s*/, ''), outline);
+                } else if (mode === 'quiz' && /={3,}\s*ĐÁP ÁN/i.test(text)) {
+                    addQuiz(question.slice(0, 50), 0);
+                }
+            }
+            saveProgress();
+        }
+
+        // Chữ ký trạng thái lộ trình, dùng để biết có thay đổi hay không
+        function progressSig() {
+            return JSON.stringify([
+                PROGRESS.topics.map(t => t.key + t.count),
+                PROGRESS.mindmaps.map(t => t.key + t.count),
+                PROGRESS.quizzes.map(q => q.id + q.correct)
+            ]);
+        }
+
+        function showToast(msg) {
+            const n = document.createElement('div');
+            n.className = 'fixed top-20 right-4 bg-emerald-500/90 text-white px-5 py-3 rounded-xl shadow-lg z-50 text-sm backdrop-blur';
+            n.textContent = msg;
+            document.body.appendChild(n);
+            setTimeout(() => n.remove(), 2500);
+        }
+
+        // Dự phòng: hỏi AI tên chủ đề khi câu trả lời không có marker
+        async function fallbackTopic(question) {
+            try {
+                const known = PROGRESS.topics.slice(0, 40).map(t => t.name).join('; ');
+                const sys = 'Bạn là bộ phân loại chủ đề học tập. Từ câu hỏi của người học, hãy trả về DUY NHẤT tên chủ đề kiến thức dưới dạng cụm danh từ ngắn (2–6 từ), viết thường trừ tên riêng, không giải thích, không dấu chấm. ' +
+                    'Nếu câu hỏi không phải nội dung học tập (chào hỏi, cảm ơn, nói chuyện phiếm), trả về đúng một từ: KHÔNG.' +
+                    (known ? ' Các chủ đề đã có: ' + known + '. Nếu câu hỏi thuộc một chủ đề đã có, hãy trả về ĐÚNG tên đó.' : '');
+                let out = await callAI('study', { system: sys, turns: [{ role: 'user', content: question.slice(0, 600) }] });
+                out = (out || '').split('\n')[0]
+                    .replace(/^[\s"'“”«»\-*•#]+|[\s"'“”«».]+$/g, '')
+                    .replace(/^(?:chủ đề|CHỦ_?ĐỀ)\s*:\s*/i, '').trim();
+                if (!out || out.length > 60 || /^không$/i.test(out)) return;
+                const before = progressSig();
+                addTopic(out);
+                saveProgress();
+                if (progressSig() !== before) showToast('📈 Đã cập nhật Lộ trình học tập');
+                if (currentMode === 'progress') renderProgress();
+            } catch (e) {
+                console.warn('Không xác định được chủ đề:', e);
+            }
+        }
+
+        function renderProgress() {
+            const P = PROGRESS;
+            const fmt = ts => new Date(ts).toLocaleDateString('vi-VN');
+            const graded = P.quizzes.filter(q => typeof q.correct === 'number' && q.total > 0);
+            const avg = graded.length
+                ? Math.round(graded.reduce((s, q) => s + q.correct / q.total, 0) / graded.length * 100) + '%'
+                : '—';
+            const stat = (emoji, num, label) => `
+                <div class="rounded-xl p-3 text-center bg-black/30 border border-white/10">
+                    <div class="text-xl">${emoji}</div>
+                    <div class="text-2xl font-bold gradient-text">${num}</div>
+                    <div class="text-xs text-gray-400">${label}</div>
+                </div>`;
+            const section = (emoji, title, body) => `
+                <div class="mb-6">
+                    <h3 class="font-bold text-gray-100 mb-3 flex items-center gap-2"><span>${emoji}</span> ${title}</h3>
+                    ${body}
+                </div>`;
+            const empty = msg => `<p class="text-sm text-gray-500 bg-black/20 rounded-lg p-3 border border-dashed border-white/10">${msg}</p>`;
+
+            const topics = [...P.topics].sort((a, b) => b.last - a.last);
+            const topicsHtml = topics.length
+                ? `<div class="flex flex-wrap gap-2">${topics.map(t => `
+                    <span class="topic-pill" title="Học lần đầu: ${fmt(t.first)} • Gần nhất: ${fmt(t.last)}">
+                        ${escapeHtml(t.name)}${t.count > 1 ? ` <small>×${t.count}</small>` : ''}
+                        <button type="button" class="del-btn" data-del="topics" data-id="${escapeHtml(t.id)}" title="Xóa">×</button>
+                    </span>`).join('')}</div>`
+                : empty('Chưa có chủ đề nào. Hãy hỏi bài ở mục 📚 Học tập — chủ đề sẽ tự động được ghi lại (hỏi lại cùng chủ đề chỉ tăng số lần học, không tạo thêm mục mới).');
+
+            const maps = [...P.mindmaps].sort((a, b) => b.last - a.last);
+            const mapsHtml = maps.length
+                ? `<div class="space-y-2">${maps.map(mm => `
+                    <div class="prog-item">
+                        <div class="flex items-center justify-between gap-2 flex-wrap">
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-gray-100 truncate">🌳 ${escapeHtml(mm.name)}</p>
+                                <p class="text-xs text-gray-500">${fmt(mm.last)}${mm.count > 1 ? ` • đã cập nhật ${mm.count} lần` : ''}</p>
+                            </div>
+                            <div class="flex items-center gap-2 flex-shrink-0">
+                                <button type="button" class="prog-link" data-mm="${mm.id}">Xem sơ đồ</button>
+                                <button type="button" class="del-btn" data-del="mindmaps" data-id="${mm.id}" title="Xóa">×</button>
+                            </div>
+                        </div>
+                        <div id="mm-${mm.id}" class="hidden mt-2">${renderMindmap(mm.outline)}</div>
+                    </div>`).join('')}</div>`
+                : empty('Chưa có sơ đồ tư duy nào. Hãy tạo ở mục 🌳 Sơ đồ tư duy.');
+
+            const quizzes = [...P.quizzes].sort((a, b) => b.date - a.date);
+            const quizHtml = quizzes.length
+                ? `<div class="space-y-2">${quizzes.map(q => {
+                    const isGraded = typeof q.correct === 'number' && q.total > 0;
+                    const pct = isGraded ? Math.round(q.correct / q.total * 100) : 0;
+                    const color = pct >= 80 ? '#34D399' : pct >= 50 ? '#FBBF24' : '#FF3D71';
+                    return `
+                    <div class="prog-item">
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-gray-100 truncate">📝 ${escapeHtml(q.name)}</p>
+                                <p class="text-xs text-gray-500">${fmt(q.date)}${q.total ? ` • ${q.total} câu` : ''}</p>
+                            </div>
+                            <div class="flex items-center gap-3 flex-shrink-0">
+                                <span class="text-sm font-bold" style="color:${isGraded ? color : '#9CA3AF'}">${isGraded ? `${q.correct}/${q.total} (${pct}%)` : 'Chưa chấm'}</span>
+                                <button type="button" class="del-btn" data-del="quizzes" data-id="${q.id}" title="Xóa">×</button>
+                            </div>
+                        </div>
+                        ${isGraded ? `<div class="prog-bar mt-2"><span style="width:${pct}%;background:${color}"></span></div>` : ''}
+                    </div>`;
+                }).join('')}</div>`
+                : empty('Chưa có bài kiểm tra nào. Hãy tạo ở mục 📝 Bài kiểm tra, làm xong gửi đáp án để được chấm điểm.');
+
+            chatMessages.innerHTML = `
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                    ${stat('📚', P.topics.length, 'Chủ đề đã học')}
+                    ${stat('🌳', P.mindmaps.length, 'Sơ đồ tư duy')}
+                    ${stat('📝', P.quizzes.length, 'Bài kiểm tra')}
+                    ${stat('🎯', avg, 'Điểm trung bình')}
+                </div>
+                ${section('📚', 'Chủ đề đã học', topicsHtml)}
+                ${section('🌳', 'Sơ đồ tư duy đã tạo', mapsHtml)}
+                ${section('📝', 'Bài kiểm tra', quizHtml)}
+                <p class="text-xs text-gray-600 text-center">Lộ trình được lưu trên trình duyệt của bạn.</p>`;
+            chatMessages.scrollTop = 0;
+        }
+
+        // Nút xóa / xem sơ đồ trong trang Lộ trình
+        chatMessages.addEventListener('click', (e) => {
+            const del = e.target.closest('[data-del]');
+            if (del) {
+                const type = del.dataset.del;
+                PROGRESS[type] = PROGRESS[type].filter(x => x.id !== del.dataset.id);
+                saveProgress();
+                renderProgress();
+                return;
+            }
+            const tg = e.target.closest('[data-mm]');
+            if (tg) {
+                const box = document.getElementById('mm-' + tg.dataset.mm);
+                if (box) {
+                    const hidden = box.classList.toggle('hidden');
+                    tg.textContent = hidden ? 'Xem sơ đồ' : 'Ẩn sơ đồ';
+                }
+            }
+        });
+
+        // ===== Vẽ sơ đồ tư duy từ dàn ý thụt lề =====
+        function renderMindmap(outline) {
+            const lines = outline.split('\n').map(l => l.replace(/\t/g, '  ')).filter(l => l.trim());
+            if (!lines.length) return '';
+            const clean = s => s.replace(/^\s*(?:[-*•+]|#+)\s*/, '').replace(/\*\*/g, '').trim();
+            const root = { text: clean(lines[0]), children: [], level: -1 };
+            const stack = [root];
+            lines.slice(1).forEach(line => {
+                const spaces = line.match(/^ */)[0].length;
+                let level = Math.floor(spaces / 2);
+                while (stack.length > 1 && stack[stack.length - 1].level >= level) stack.pop();
+                level = Math.min(level, stack[stack.length - 1].level + 1);
+                const node = { text: clean(line), children: [], level };
+                stack[stack.length - 1].children.push(node);
+                stack.push(node);
+            });
+            const renderNode = (node, cls) => {
+                let html = `<div class="mm-row ${cls}"><div class="mm-box">${escapeHtml(node.text)}</div>`;
+                if (node.children.length) {
+                    html += '<div class="mm-children">' +
+                        node.children.map(c => renderNode(c, '')).join('') + '</div>';
+                }
+                return html + '</div>';
+            };
+            let html = `<div class="mm-row mm-root"><div class="mm-box">${escapeHtml(root.text)}</div>`;
+            if (root.children.length) {
+                html += '<div class="mm-children">' +
+                    root.children.map((c, i) => renderNode(c, 'mm-c' + (i % 6))).join('') + '</div>';
+            }
+            html += '</div>';
+            return `<div class="mm-wrap"><div class="mm-tree">${html}</div></div>`;
+        }
+
+        // ===== Khối đáp án (bấm để xem) =====
+        function answerBlock(innerHtml) {
+            return `<div class="my-4 border-t border-dashed border-emerald-400/30 pt-3">
+                <button type="button" class="ans-btn" onclick="toggleAnswer(this)"><i class="fa fa-eye"></i> Xem đáp án &amp; lời giải</button>
+                <div class="ans-body hidden mt-3 p-3 rounded-lg bg-emerald-500/5 border-l-2 border-emerald-400">${innerHtml}</div>
+            </div>`;
+        }
+
+        function toggleAnswer(btn) {
+            const body = btn.nextElementSibling;
+            const hidden = body.classList.toggle('hidden');
+            btn.innerHTML = hidden
+                ? '<i class="fa fa-eye"></i> Xem đáp án &amp; lời giải'
+                : '<i class="fa fa-eye-slash"></i> Ẩn đáp án';
+        }
+
+        function copyCode(btn) {
+            const code = btn.parentElement.querySelector('pre code')?.textContent || '';
+            const done = () => {
+                btn.innerHTML = '<i class="fa fa-check"></i> Đã chép';
+                setTimeout(() => { btn.innerHTML = '<i class="fa fa-clipboard"></i> Sao chép'; }, 1500);
+            };
+            if (navigator.clipboard?.writeText) {
+                navigator.clipboard.writeText(code).then(done).catch(() => {});
+            } else {
+                const ta = document.createElement('textarea');
+                ta.value = code;
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); done(); } catch (e) {}
+                ta.remove();
+            }
+        }
+
+        function appendMessage(content, sender, isError) {
+            const div = document.createElement('div');
+            div.className = `flex gap-3 md:gap-4 ${sender === 'user' ? 'justify-end' : ''}`;
+            if (sender === 'user') {
+                div.innerHTML = `
+                    <div class="chat-bubble-user p-4 max-w-[88%] text-gray-100 break-words overflow-x-auto" style="min-width:0">
+                        ${escapeHtml(content).replace(/\n/g, '<br>')}
+                    </div>
+                    <div class="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-gray-700/50 flex items-center justify-center flex-shrink-0">
+                        <i class="fa fa-user text-cyan-400"></i>
+                    </div>
+                `;
+            } else {
+                div.innerHTML = `
+                    <div class="w-9 h-9 md:w-10 md:h-10 rounded-xl gradient-main flex items-center justify-center text-white flex-shrink-0 shadow-neon">
+                        <i class="fa fa-microchip"></i>
+                    </div>
+                    <div class="chat-bubble-ai p-4 md:p-5 max-w-[88%] break-words" style="min-width:0">
+                        <p class="font-bold text-cyan-300 mb-2">Trace AI</p>
+                        <div class="text-gray-300">${formatContent(content)}</div>
+                    </div>
+                `;
+            }
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function addLoading(mode) {
+            const div = document.createElement('div');
+            div.setAttribute('data-loading', '1');
+            div.className = 'flex gap-3 md:gap-4';
+            const label = ({ debug: 'Đang phân tích lỗi…', study: 'Đang soạn bài giảng…', mindmap: 'Đang vẽ sơ đồ…', quiz: 'Đang ra đề…' })[mode] || 'Đang xử lý…';
+            div.innerHTML = `
+                <div class="w-9 h-9 md:w-10 md:h-10 rounded-xl gradient-main flex items-center justify-center text-white flex-shrink-0 shadow-neon">
+                    <i class="fa fa-microchip"></i>
+                </div>
+                <div class="chat-bubble-ai p-4 md:p-5">
+                    <p class="font-bold text-cyan-300 mb-2">${label}</p>
+                    <div class="flex gap-1.5 items-center">
+                        <span class="typing-dot w-2.5 h-2.5 bg-cyan-400 rounded-full" style="animation-delay:0s"></span>
+                        <span class="typing-dot w-2.5 h-2.5 bg-cyan-400 rounded-full" style="animation-delay:0.2s"></span>
+                        <span class="typing-dot w-2.5 h-2.5 bg-cyan-400 rounded-full" style="animation-delay:0.4s"></span>
+                    </div>
+                </div>
+            `;
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        init();
+    </script>
+</body>
+</html>
